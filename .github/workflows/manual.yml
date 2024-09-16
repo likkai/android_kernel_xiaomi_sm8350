@@ -1,0 +1,41 @@
+name: Build Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+      
+      - name: Prepare required toolchains
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/toolchains
+          cd $GITHUB_WORKSPACE/toolchains
+          git clone https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 --depth=1
+
+      - name: Export Clang to PATH
+        run: export PATH="$GITHUB_WORKSPACE/toolchains/linux-x86/clang-r498229b/bin:$PATH"
+
+      - name: Update and install required packages
+        run: |
+          sudo apt update
+          sudo apt install -y libc6-dev clang flex bison libssl-dev bc python3 python2 zip unzip lld llvm
+
+      - name: Prepare kernel source
+        run: |
+          cd $GITHUB_WORKSPACE
+          git clone https://github.com/likkai/android_kernel_xiaomi_sm8350.git --depth=1
+
+      - name: Install KernelSU
+        run: |
+          cd $GITHUB_WORKSPACE/android_kernel_xiaomi_sm8350/
+          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
+
+      - name: Run build.sh
+        run: |
+          chmod +x build.sh
+          ./build.sh
