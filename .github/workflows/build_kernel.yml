@@ -64,6 +64,11 @@ jobs:
           cp $GITHUB_WORKSPACE/android_kernel_xiaomi_sm8350/boot.img $GITHUB_WORKSPACE/output
           cp $GITHUB_WORKSPACE/android_kernel_xiaomi_sm8350/out/arch/arm64/boot/Image $GITHUB_WORKSPACE/output
 
+      - name: Prepare boot.img
+        run: |
+          cd $GITHUB_WORKSPACE/output
+          curl -L -o boot.img "https://cyfuture.dl.sourceforge.net/project/pixelos-releases/fourteen/lisa/recovery/boot-lisa-20240804.img?viasf=1"
+
       - name: Modify boot.img
         run: |
           cd $GITHUB_WORKSPACE/output
