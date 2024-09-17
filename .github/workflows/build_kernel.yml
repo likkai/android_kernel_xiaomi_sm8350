@@ -19,8 +19,6 @@ jobs:
           curl -L -o magiskboot.7z https://github.com/xiaoxindada/magiskboot_ndk_on_linux/releases/download/Magiskboot-27006-69/magiskboot.7z
           7z x magiskboot.7z
           cp ./out/x86/magiskboot $GITHUB_WORKSPACE/output
-          cp $GITHUB_WORKSPACE/android_kernel_xiaomi_sm8350/boot.img $GITHUB_WORKSPACE/output
-          cp $GITHUB_WORKSPACE/android_kernel_xiaomi_sm8350/out/arch/arm64/boot/Image $GITHUB_WORKSPACE/output
 
       - name: Prepare boot.img
         run: |
@@ -35,7 +33,7 @@ jobs:
 
       - name: Remove unnecessary tools
         run: |
-          cd $GITHUB_WORKSPACE/toolchains
+          cd $GITHUB_WORKSPACE/toolchains/linux-x86
           find . -maxdepth 1 -type d -name "clang*" ! -name "clang-r498229b" -exec rm -rf {} +
           clang_versions=$(find . -maxdepth 1 -type d -name "clang*" ! -name "clang-r498229b")
           clang_count=$(echo "$clang_versions" | wc -l)
@@ -65,6 +63,7 @@ jobs:
         run: |
           chmod +x build.sh
           ./build.sh
+          cp $GITHUB_WORKSPACE/android_kernel_xiaomi_sm8350/out/arch/arm64/boot/Image $GITHUB_WORKSPACE/output
 
       - name: Modify boot.img
         run: |
