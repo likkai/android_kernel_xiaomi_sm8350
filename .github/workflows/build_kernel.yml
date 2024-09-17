@@ -13,12 +13,21 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Debug
+        run: |
+          ls -al
+          pwd
+          echo $GITHUB_WORKSPACE
+
       - name: Prepare magiskboot
         run: |
           mkdir -p $GITHUB_WORKSPACE/output
+          cd $GITHUB_WORKSPACE/output
           curl -L -o magiskboot.7z https://github.com/xiaoxindada/magiskboot_ndk_on_linux/releases/download/Magiskboot-27006-69/magiskboot.7z
           7z x magiskboot.7z
-          cp ./out/x86/magiskboot $GITHUB_WORKSPACE/output
+          cp ./out/x86/magiskboot .
+          chmod +x magiskboot
+          rm -rf ./out
 
       - name: Prepare boot.img
         run: |
@@ -56,19 +65,18 @@ jobs:
 
       - name: Install KernelSU
         run: |
-          cd $GITHUB_WORKSPACE/android_kernel_xiaomi_sm8350/
+          cd $GITHUB_WORKSPACE
           curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
 
       - name: Run build.sh
         run: |
           chmod +x build.sh
           ./build.sh
-          cp $GITHUB_WORKSPACE/android_kernel_xiaomi_sm8350/out/arch/arm64/boot/Image $GITHUB_WORKSPACE/output
+          cp $GITHUB_WORKSPACE/out/arch/arm64/boot/Image $GITHUB_WORKSPACE/output
 
       - name: Modify boot.img
         run: |
           cd $GITHUB_WORKSPACE/output
-          chmod +x ./magiskboot
           ./magiskboot unpack boot.img
           rm -rf kernel
           mv Image kernel
