@@ -10,6 +10,8 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Prepare magiskboot
         run: |
@@ -53,11 +55,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y libc6-dev clang flex bison libssl-dev bc python3 python2 zip unzip lld llvm p7zip-full
-
-      - name: Prepare kernel source
-        run: |
-          cd $GITHUB_WORKSPACE
-          git clone https://github.com/likkai/android_kernel_xiaomi_sm8350.git --depth=1
 
       - name: Install KernelSU
         run: |
