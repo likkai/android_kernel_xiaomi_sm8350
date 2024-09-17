@@ -13,6 +13,11 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Update and install required packages
+        run: |
+          sudo apt update
+          sudo apt install -y libc6-dev clang flex bison libssl-dev bc python3 python2 zip unzip lld llvm p7zip-full
+
       - name: Prepare magiskboot
         run: |
           mkdir -p $GITHUB_WORKSPACE/output
@@ -48,21 +53,14 @@ jobs:
           else
               echo "Only clang-r498229b is present."
           fi
-
-      - name: Export Clang to PATH
-        run: export PATH="$GITHUB_WORKSPACE/toolchains/linux-x86/clang-r498229b/bin:$PATH"
-
-      - name: Update and install required packages
-        run: |
-          sudo apt update
-          sudo apt install -y libc6-dev clang flex bison libssl-dev bc python3 python2 zip unzip lld llvm p7zip-full
+          export PATH="$GITHUB_WORKSPACE/toolchains/linux-x86/clang-r498229b/bin:$PATH"
 
       - name: Install KernelSU
         run: |
           cd $GITHUB_WORKSPACE
           curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
 
-      - name: Run build.sh
+      - name: Build Kernel
         run: |
           chmod +x build.sh
           ./build.sh
@@ -75,12 +73,9 @@ jobs:
           rm -rf kernel
           mv Image kernel
           ./magiskboot repack boot.img
-          echo DEBUG: $(pwd)
-          echo DEBUG: $(ls -l)
-          ls $GITHUB_WORKSPACE/output/new-boot.img
 
       - name: Upload Kernel
         uses: actions/upload-artifact@v4
         with:
           name: new-boot.img
-          path: $GITHUB_WORKSPACE/output/new-boot.img
+          path: /home/runner/work/android_kernel_xiaomi_sm8350/android_kernel_xiaomi_sm8350/output/new-boot.img
