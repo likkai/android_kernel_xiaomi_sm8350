@@ -1,0 +1,80 @@
+name: Build Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Prepare required toolchains
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/toolchains
+          cd $GITHUB_WORKSPACE/toolchains
+          git clone https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 --depth=1
+
+      - name: Remove unnecessary tools
+        run: |
+          cd $GITHUB_WORKSPACE/toolchains
+          find . -maxdepth 1 -type d -name "clang*" ! -name "clang-r498229b" -exec rm -rf {} +
+          clang_versions=$(find . -maxdepth 1 -type d -name "clang*" ! -name "clang-r498229b")
+          clang_count=$(echo "$clang_versions" | wc -l)
+          if [[ $clang_count -gt 0 ]]; then
+              echo "Error: More than one clang version found except clang-r498229b."
+              echo "Found:"
+              echo "$clang_versions"
+              exit 1
+          else
+              echo "Only clang-r498229b is present."
+          fi
+
+      - name: Export Clang to PATH
+        run: export PATH="$GITHUB_WORKSPACE/toolchains/linux-x86/clang-r498229b/bin:$PATH"
+
+      - name: Update and install required packages
+        run: |
+          sudo apt update
+          sudo apt install -y libc6-dev clang flex bison libssl-dev bc python3 python2 zip unzip lld llvm p7zip-full
+
+      - name: Prepare kernel source
+        run: |
+          cd $GITHUB_WORKSPACE
+          git clone https://github.com/likkai/android_kernel_xiaomi_sm8350.git --depth=1
+
+      - name: Install KernelSU
+        run: |
+          cd $GITHUB_WORKSPACE/android_kernel_xiaomi_sm8350/
+          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
+
+      - name: Run build.sh
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Prepare magiskboot
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/output
+          curl -L -o magiskboot.7z https://github.com/xiaoxindada/magiskboot_ndk_on_linux/releases/download/Magiskboot-27006-69/magiskboot.7z
+          7z x magiskboot.7z
+          cp ./out/x86/magiskboot $GITHUB_WORKSPACE/output
+          cp $GITHUB_WORKSPACE/android_kernel_xiaomi_sm8350/boot.img $GITHUB_WORKSPACE/output
+          cp $GITHUB_WORKSPACE/android_kernel_xiaomi_sm8350/out/arch/arm64/boot/Image $GITHUB_WORKSPACE/output
+
+      - name: Modify boot.img
+        run: |
+          cd $GITHUB_WORKSPACE/output
+          chmod +x ./magiskboot
+          ./magiskboot unpack boot.img
+          rm -rf kernel
+          mv Image kernel
+          ./magiskboot repack boot.img
+
+      - name: Upload Kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: new-boot.img
+          path: $GITHUB_WORKSPACE/output/new-boot.img
