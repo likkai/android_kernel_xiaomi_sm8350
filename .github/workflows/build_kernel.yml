@@ -23,7 +23,7 @@ jobs:
           find . -maxdepth 1 -type d -name "clang*" ! -name "clang-r498229b" -exec rm -rf {} +
           clang_versions=$(find . -maxdepth 1 -type d -name "clang*" ! -name "clang-r498229b")
           clang_count=$(echo "$clang_versions" | wc -l)
-          if [[ $clang_count -gt 0 ]]; then
+          if [[ $clang_count -gt 1 ]]; then
               echo "Error: More than one clang version found except clang-r498229b."
               echo "Found:"
               echo "$clang_versions"
