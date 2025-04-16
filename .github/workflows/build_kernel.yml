@@ -16,7 +16,7 @@ jobs:
       - name: Update and install required packages
         run: |
           sudo apt update
-          sudo apt install -y libc6-dev clang flex bison libssl-dev bc python3 python2 zip unzip lld llvm p7zip-full
+          sudo apt install -y libc6-dev clang flex bison libssl-dev bc python3 zip unzip lld llvm p7zip-full
 
       - name: Prepare magiskboot
         run: |
