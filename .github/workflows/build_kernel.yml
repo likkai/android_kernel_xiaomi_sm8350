@@ -42,18 +42,18 @@ jobs:
       - name: Remove unnecessary tools
         run: |
           cd $GITHUB_WORKSPACE/toolchains/linux-x86
-          find . -maxdepth 1 -type d -name "clang*" ! -name "clang-r498229b" -exec rm -rf {} +
-          clang_versions=$(find . -maxdepth 1 -type d -name "clang*" ! -name "clang-r498229b")
-          clang_count=$(echo "$clang_versions" | wc -l)
-          if [[ $clang_count -gt 1 ]]; then
-              echo "Error: More than one clang version found except clang-r498229b."
-              echo "Found:"
-              echo "$clang_versions"
-              exit 1
-          else
-              echo "Only clang-r498229b is present."
-          fi
-          export PATH="$GITHUB_WORKSPACE/toolchains/linux-x86/clang-r498229b/bin:$PATH"
+          latest_clang=$(find . -maxdepth 1 -type d -name "clang-r*" | sed 's|.*/||' | sort -Vr | head -n 1)
+          echo "Latest Clang version detected: $latest_clang"
+          
+          for dir in clang-r*; do
+            if [[ "$dir" != "$latest_clang" ]]; then
+              echo "Removing $dir"
+              rm -rf "$dir"
+            fi
+          done
+
+          # Export path
+          export PATH="$GITHUB_WORKSPACE/toolchains/linux-x86/$latest_clang/bin:$PATH"
 
       - name: Install KernelSU
         run: |
