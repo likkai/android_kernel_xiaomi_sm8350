@@ -1,0 +1,72 @@
+name: Build Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Update and install required packages
+        run: |
+          sudo apt update
+          sudo apt install -y libc6-dev clang flex bison libssl-dev bc python3 zip unzip lld llvm p7zip-full
+      - name: Prepare magiskboot
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/output
+          cd $GITHUB_WORKSPACE/output
+          curl -L -o magiskboot.7z https://github.com/xiaoxindada/magiskboot_ndk_on_linux/releases/download/Magiskboot-27006-69/magiskboot.7z
+          7z x magiskboot.7z
+          cp ./out/x86/magiskboot .
+          chmod +x magiskboot
+          rm -rf ./out
+      - name: Prepare boot.img
+        run: |
+          cd $GITHUB_WORKSPACE/output
+          curl -L -o boot.img "https://github.com/likkai/android_kernel_xiaomi_sm8350/releases/download/ori-0.1.0/boot.img"
+      - name: Prepare required toolchains
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/toolchains
+          cd $GITHUB_WORKSPACE/toolchains
+          git clone https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 --depth=1
+      - name: Remove unnecessary tools
+        run: |
+          cd $GITHUB_WORKSPACE/toolchains/linux-x86
+          latest_clang=$(find . -maxdepth 1 -type d -name "clang-r*" | sed 's|.*/||' | sort -Vr | head -n 1)
+          echo "Latest Clang version detected: $latest_clang"
+          
+          for dir in clang-r*; do
+            if [[ "$dir" != "$latest_clang" ]]; then
+              echo "Removing $dir"
+              rm -rf "$dir"
+            fi
+          done
+          # Export path
+          export PATH="$GITHUB_WORKSPACE/toolchains/linux-x86/$latest_clang/bin:$PATH"
+      - name: Install KernelSU
+        run: |
+          cd $GITHUB_WORKSPACE
+          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
+      - name: Build Kernel
+        run: |
+          chmod +x build.sh
+          ./build.sh
+          cp $GITHUB_WORKSPACE/out/arch/arm64/boot/Image $GITHUB_WORKSPACE/output
+      - name: Modify boot.img
+        run: |
+          cd $GITHUB_WORKSPACE/output
+          ./magiskboot unpack boot.img
+          rm -rf kernel
+          mv Image kernel
+          ./magiskboot repack boot.img
+      - name: Upload Kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: new-boot.img
+          path: /home/runner/work/android_kernel_xiaomi_sm8350/android_kernel_xiaomi_sm8350/output/new-boot.img
